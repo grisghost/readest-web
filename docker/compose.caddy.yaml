@@ -1,0 +1,24 @@
+services:
+  client:
+    networks:
+      - default
+      - caddy
+  kong:
+    networks:
+      - default
+      - caddy
+  minio:
+    # upstream quay.io/minio/minio no longer allows anonymous pulls (401 since Sep 2026)
+    # use community fork drop-in replacement (same env, same /data format)
+    image: pgsty/minio:RELEASE.2026-06-18T00-00-00Z
+    networks:
+      - default
+      - caddy
+  minio-setup:
+    # same fork contains `mc` binary, works for the setup helper
+    image: pgsty/minio:RELEASE.2026-06-18T00-00-00Z
+
+networks:
+  caddy:
+    external: true
+    name: caddy
