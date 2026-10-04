@@ -15,7 +15,15 @@ import {
   resolveThemeIsDarkMode,
 } from '@/utils/ambientLight';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { CustomTheme, Palette, ThemeMode, ThemeScope } from '@/styles/themes';
+import {
+  CustomTheme,
+  Palette,
+  ThemeMode,
+  ThemeScope,
+  generateDarkPalette,
+  generateLightPalette,
+  themes,
+} from '@/styles/themes';
 import { EnvConfigType, isWebAppPlatform } from '@/services/environment';
 import { SystemSettings } from '@/types/settings';
 import { Insets } from '@/types/misc';
@@ -382,9 +390,62 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       syncAmbientLightSubscription(activeMode);
     },
     updateAppTheme: (color) => {
-      if (isWebAppPlatform()) {
-        const { palette } = get().themeCode;
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', palette[color]);
+      // Paints the mobile browser chrome (Safari/Chrome toolbar + iOS status
+      // bar) in the app's surface color. No-op on Tauri, where the native
+      // bridge owns the status bar. Resolves from the active scope's
+      // themeColor/isDarkMode (not themeCode, which only refreshes for reader
+      // and system changes) so a library-only override still tints correctly.
+      if (!isWebAppPlatform() || typeof document === 'undefined') return;
+      const { themeColor, isDarkMode } = get();
+      const builtIn = themes.find((t) => t.name === themeColor);
+      let palette: Palette | undefined = builtIn
+        ? isDarkMode
+          ? builtIn.colors.dark
+          : builtIn.colors.light
+        : undefined;
+      if (!palette && typeof localStorage !== 'undefined') {
+        try {
+          const customThemes = JSON.parse(
+            localStorage.getItem('customThemes') || '[]',
+          ) as CustomTheme[];
+          const custom = customThemes.find((t) => t.name === themeColor);
+          if (custom) {
+            palette = isDarkMode
+              ? generateDarkPalette(custom.colors.dark)
+              : generateLightPalette(custom.colors.light);
+          }
+        } catch {
+          // fall through to themeCode below
+        }
+      }
+      palette ??= get().themeCode.palette;
+      const value = palette[color];
+      if (!value) return;
+      // The `<html>` element itself is transparent (the `html[data-page]`
+      // backgrounds in globals.css never apply — nothing sets `data-page`),
+      // so on the library page the iOS status-bar strip and the rubber-band
+      // overscroll show the black window behind the page. Paint the root
+      // with this page's exact surface color (library: base-200, elsewhere
+      // base-100) so every edge zone matches the page.
+      if (document.documentElement.style.backgroundColor !== value) {
+        document.documentElement.style.backgroundColor = value;
+      }
+      // App Router emits one tag per color scheme (see layout viewport); the
+      // Pages Router legacy _app does the same. Update the tag matching the
+      // active mode so light/dark SSR fallbacks stay intact.
+      const modeSelector = isDarkMode
+        ? 'meta[name="theme-color"][media*="dark"]'
+        : 'meta[name="theme-color"][media*="light"]';
+      let meta =
+        document.querySelector<HTMLMetaElement>(modeSelector) ??
+        document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        document.head.appendChild(meta);
+      }
+      if (meta.getAttribute('content') !== value) {
+        meta.setAttribute('content', value);
       }
     },
     saveCustomTheme: async (envConfig, settings, theme, isDelete) => {

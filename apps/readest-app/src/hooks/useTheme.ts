@@ -52,8 +52,15 @@ export const useTheme = ({
     setThemeScope(themeScope);
   }, [themeScope, setThemeScope]);
 
+  // Keep the mobile browser chrome (theme-color meta → Safari/Chrome toolbar
+  // + iOS status bar) in step with the active palette: per-page surface
+  // (base-100 vs base-200), light/dark toggles, and custom themes.
   useEffect(() => {
     updateAppTheme(appThemeColor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appThemeColor, themeColor, isDarkMode]);
+
+  useEffect(() => {
     if (appService?.isAndroidApp) {
       getStatusBarHeight().then((res) => {
         if (res.height && res.height > 0) {

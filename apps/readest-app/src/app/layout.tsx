@@ -39,7 +39,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'Readest',
-    statusBarStyle: 'default',
+    // Opaque black bar (NOT black-translucent): translucent lets the page
+    // slide under the status bar — hiding the fixed back button under it —
+    // and iOS draws a blur backdrop behind the clock that cannot be removed
+    // from the page. Opaque keeps the content below the bar with no blur and
+    // matches the dark theme.
+    statusBarStyle: 'black',
   },
   openGraph: {
     type: 'website',
@@ -68,6 +73,15 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  // Paints the iOS status bar and the mobile browser toolbar (Safari/Chrome)
+  // in the app's own surface color. Without this the browser falls back to
+  // pure black in dark mode while the library paints base-200 dark gray.
+  // `useTheme`/`updateAppTheme` overwrites the matching tag at runtime with
+  // the exact palette value (base-100 vs base-200 per page, custom themes).
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#222222' },
+  ],
   // `interactive-widget=resizes-content` is appended client-side on
   // Android only — see Providers.tsx. Other browsers warn about the
   // unrecognized key on every page load, so we keep it out of SSR.

@@ -20,7 +20,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <meta name='application-name' content='Readest' />
         <meta name='apple-mobile-web-app-capable' content='yes' />
-        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
+        <meta name='apple-mobile-web-app-status-bar-style' content='black' />
         <meta name='apple-mobile-web-app-title' content='Readest' />
         <meta
           name='description'
@@ -28,7 +28,8 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <meta name='format-detection' content='telephone=no' />
         <meta name='mobile-web-app-capable' content='yes' />
-        <meta name='theme-color' content='white' />
+        <meta name='theme-color' media='(prefers-color-scheme: light)' content='#ffffff' />
+        <meta name='theme-color' media='(prefers-color-scheme: dark)' content='#222222' />
         <link rel='manifest' href='/manifest.json' />
       </Head>
       <EnvProvider>
